@@ -1,0 +1,55 @@
+export type ProductStatus = 'deployed' | 'active' | 'classified'
+
+export interface Product {
+  id: string; num: string; name: string; icon: string
+  status: ProductStatus; shortDesc: string; fullDesc: string; tags: string[]
+  accentColor?: string
+}
+
+export const products: Product[] = [
+  { id:'neuropath', num:'001', name:'NeuroPath', icon:'N', status:'deployed',
+    accentColor:'rgba(201,166,107,0.12)',
+    shortDesc:'AI-powered personalized learning platform. Adaptive diagnostics. Intelligent study generation.',
+    fullDesc:'Full diagnostic engine, Whisper transcription pipeline, OpenAI-generated study packs, Supabase RLS migrations, end-to-end bug resolution. Next.js 15, Express, Supabase, OpenAI.',
+    tags:['Next.js','OpenAI','Supabase','Express','AI'] },
+  { id:'airhandler', num:'002', name:'AirHandler Pro', icon:'A', status:'active',
+    accentColor:'rgba(200,16,46,0.08)',
+    shortDesc:'HVAC service CRM with neobrutalist precision. Estimates, admin, multi-role — end to end.',
+    fullDesc:'Full-stack HVAC CRM with a custom neobrutalism design system. Multi-role authentication, estimate workflows, admin panels, custom Tailwind. Next.js + TypeScript + Supabase.',
+    tags:['Next.js','TypeScript','Supabase','CRM'] },
+  { id:'graphy', num:'003', name:'Graphy', icon:'G', status:'deployed',
+    accentColor:'rgba(201,166,107,0.1)',
+    shortDesc:'AI-powered chart editing suite. Natural language visual intelligence. React + TypeScript.',
+    fullDesc:'React/TypeScript AI-powered charting app. Natural language chart control, color overrides, history persistence, toolbar and template propagation. Full bug resolution.',
+    tags:['React','TypeScript','AI','Data Viz','Recharts'] },
+  { id:'workflow-engine', num:'004', name:'The Workflow Engine', icon:'W', status:'deployed',
+    accentColor:'rgba(201,166,107,0.08)',
+    shortDesc:'n8n automation infrastructure at enterprise scale. Invisible infrastructure. Visible results.',
+    fullDesc:'End-to-end n8n automation with WooCommerce, WhatsApp Business API, PayPal, and GoHighLevel CRM integrations. Multi-client deployment.',
+    tags:['n8n','WhatsApp','WooCommerce','GoHighLevel','Automation'] },
+  { id:'sentinel', num:'005', name:'Sentinel Intelligence', icon:'S', status:'active',
+    accentColor:'rgba(200,16,46,0.08)',
+    shortDesc:'AI-powered Slack intelligence bot for market research pricing. Precision at speed.',
+    fullDesc:'Slack bot that calculates Incidence Rates for market research pricing in real time. OpenAI-powered with custom logic, automated reporting, Slack API.',
+    tags:['Slack','OpenAI','Analytics','Market Research'] },
+  { id:'vesper', num:'006', name:'Vesper Content Pipeline', icon:'V', status:'deployed',
+    accentColor:'rgba(201,166,107,0.09)',
+    shortDesc:'YouTube-to-short-form automation. AI clipping + AI video overlays + multi-platform publish.',
+    fullDesc:'Fully automated pipeline: Klap.app AI clipping, Blotato publishing, HeyGen AI video generation with location-specific overlays. Orchestrated in n8n.',
+    tags:['n8n','HeyGen','Klap.app','Content AI','Blotato'] },
+  { id:'lead-agent', num:'007', name:'Lead Intelligence Agent', icon:'L', status:'active',
+    accentColor:'rgba(200,16,46,0.07)',
+    shortDesc:'GoHighLevel lead scoring with Gmail + Google Sheets. Automated follow-up sequencing.',
+    fullDesc:'AI-driven lead qualification on GoHighLevel. Gmail capture, Google Sheets scoring, automated sequences, Calendly/Hyros deduplication.',
+    tags:['GoHighLevel','Gmail','Google Sheets','AI','Automation'] },
+  { id:'moviemate', num:'008', name:'MovieMate Audit', icon:'M', status:'deployed',
+    accentColor:'rgba(201,166,107,0.07)',
+    shortDesc:'Full-stack codebase security and architecture audit. 23 critical issues identified.',
+    fullDesc:'Comprehensive security & architecture audit. 23 issues identified across security, backend, and frontend. Professional PDF report + remediation roadmap.',
+    tags:['Security','Audit','Full-Stack','PDF Report'] },
+  { id:'redacted', num:'009', name:'Project: Redacted', icon:'?', status:'classified',
+    accentColor:'rgba(255,255,255,0.02)',
+    shortDesc:'This file is sealed. Continental clearance required.',
+    fullDesc:'Access to this file requires Continental clearance. Submit a request through System Access. The front desk will be in touch.',
+    tags:['Clearance Required'] },
+]
