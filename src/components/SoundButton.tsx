@@ -1,134 +1,213 @@
 'use client'
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { usePathname } from 'next/navigation'
+
+const TRACKS = [
+  '/audio/track1.mp3',
+  '/audio/track2.mp3',
+  '/audio/track3.mp3',
+]
+
+const DEFAULT_VOLUME = 0.5
+const FADE_DURATION  = 1200
+
+function fadeVolume(
+  audio: HTMLAudioElement,
+  from: number,
+  to: number,
+  duration: number,
+  onDone?: () => void
+) {
+  audio.volume  = Math.max(0, Math.min(1, from))
+  const steps   = 40
+  const interval = duration / steps
+  const delta   = (to - from) / steps
+  let count     = 0
+  const timer   = setInterval(() => {
+    count++
+    audio.volume = Math.min(1, Math.max(0, audio.volume + delta))
+    if (count >= steps) { clearInterval(timer); onDone?.() }
+  }, interval)
+  return timer
+}
 
 export default function SoundButton() {
-  const [playing, setPlaying] = useState(false)
-  const [ready,   setReady  ] = useState(false)
-  const ctx    = useRef<AudioContext | null>(null)
-  const master = useRef<GainNode | null>(null)
-  const built  = useRef(false)
+  const pathname               = usePathname()
+  const [visible,  setVisible] = useState(false)
+  const [playing,  setPlaying] = useState(false)
+  const [volume,   setVolume ] = useState(DEFAULT_VOLUME)
+  const [showSlider, setShowSlider] = useState(false)
+  const audioRef               = useRef<HTMLAudioElement | null>(null)
+  const trackIdxRef            = useRef(0)
+  const initializedRef         = useRef(false)
+  const fadeTimerRef           = useRef<ReturnType<typeof setInterval> | null>(null)
+  const hideSliderTimer        = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const buildAmbience = useCallback((c: AudioContext, m: GainNode) => {
-    if (built.current) return
-    built.current = true
+  // Init audio once
+  useEffect(() => {
+    const audio      = new Audio(TRACKS[0])
+    audio.volume     = 0
+    audio.preload    = 'auto'
+    audioRef.current = audio
 
-    const osc = (freq: number, type: OscillatorType, gain: number) => {
-      const o = c.createOscillator()
-      const g = c.createGain()
-      o.type = type; o.frequency.value = freq; g.gain.value = gain
-      o.connect(g); g.connect(m); o.start()
-      return { o, g }
-    }
+    audio.addEventListener('ended', () => {
+      trackIdxRef.current = (trackIdxRef.current + 1) % TRACKS.length
+      audio.src    = TRACKS[trackIdxRef.current]
+      audio.volume = volume
+      audio.play().catch(() => {})
+    })
 
-    // Deep sub drone
-    osc(40, 'sine', 0.22)
+    audio.addEventListener('error', (e) => console.error('Audio error:', e))
 
-    // Fundamental
-    const { o: fund } = osc(55, 'sine', 0.26)
-    // Slow detune for movement
-    const dLfo = c.createOscillator(); dLfo.frequency.value = 0.03
-    const dG   = c.createGain();       dG.gain.value = 0.8
-    dLfo.connect(dG); dG.connect(fund.detune); dLfo.start()
-
-    // 5th
-    osc(82.5, 'sine', 0.1)
-
-    // Octave
-    osc(110, 'triangle', 0.055)
-
-    // Shimmer 220 + LFO
-    const { o: sh } = osc(220, 'sine', 0.038)
-    const sLfo = c.createOscillator(); sLfo.frequency.value = 0.07
-    const sG   = c.createGain();       sG.gain.value = 14
-    sLfo.connect(sG); sG.connect(sh.frequency); sLfo.start()
-
-    // High shimmer 440
-    const { o: hi } = osc(440, 'sine', 0.012)
-    const hLfo = c.createOscillator(); hLfo.frequency.value = 0.035
-    const hG   = c.createGain();       hG.gain.value = 9
-    hLfo.connect(hG); hG.connect(hi.frequency); hLfo.start()
-
-    // Very high bell shimmer 880
-    const { o: bell } = osc(880, 'sine', 0.006)
-    const bLfo = c.createOscillator(); bLfo.frequency.value = 0.055
-    const bG   = c.createGain();       bG.gain.value = 6
-    bLfo.connect(bG); bG.connect(bell.frequency); bLfo.start()
-
-    // Low noise pad
-    const sr = c.sampleRate; const buf = c.createBuffer(1, sr*4, sr)
-    const data = buf.getChannelData(0)
-    for (let i = 0; i < data.length; i++) data[i] = (Math.random()*2-1)*.01
-    const noise = c.createBufferSource(); noise.buffer = buf; noise.loop = true
-    const filt = c.createBiquadFilter(); filt.type = 'lowpass'; filt.frequency.value = 140
-    const nG = c.createGain(); nG.gain.value = 0.5
-    noise.connect(filt); filt.connect(nG); nG.connect(m); noise.start()
-
-    // Mid noise breathe
-    const buf2 = c.createBuffer(1, sr*3, sr)
-    const d2 = buf2.getChannelData(0)
-    for (let i=0;i<d2.length;i++) d2[i]=(Math.random()*2-1)*.008
-    const noise2=c.createBufferSource();noise2.buffer=buf2;noise2.loop=true
-    const f2=c.createBiquadFilter();f2.type='bandpass';f2.frequency.value=300;f2.Q.value=0.5
-    const n2G=c.createGain();n2G.gain.value=0.2
-    // Amplitude LFO on noise2
-    const aLfo=c.createOscillator();aLfo.frequency.value=0.06
-    const aG=c.createGain();aG.gain.value=0.15
-    aLfo.connect(aG);aG.connect(n2G.gain);aLfo.start()
-    noise2.connect(f2);f2.connect(n2G);n2G.connect(m);noise2.start()
+    return () => { audio.pause(); audio.src = '' }
   }, [])
 
+  // Visibility — mirrors Navigation.tsx
   useEffect(() => {
+    if (pathname !== '/') { setVisible(true); return }
+
     const handler = () => {
-      if (ctx.current) return
-      const c = new (window.AudioContext || (window as any).webkitAudioContext)()
-      const m = c.createGain()
-      m.gain.setValueAtTime(0, c.currentTime)
-      m.gain.linearRampToValueAtTime(0.14, c.currentTime + 5)
-      m.connect(c.destination)
-      ctx.current = ctx.current || c
-      master.current = m
-      buildAmbience(c, m)
-      setPlaying(true)
-      setReady(true)
+      setVisible(true)
+      if (!initializedRef.current && audioRef.current) {
+        initializedRef.current = true
+        audioRef.current.play()
+          .then(() => {
+            fadeVolume(audioRef.current!, 0, DEFAULT_VOLUME, 3000)
+            setPlaying(true)
+          })
+          .catch(() => {})
+      }
     }
+
     window.addEventListener('continental:enter', handler)
     return () => window.removeEventListener('continental:enter', handler)
-  }, [buildAmbience])
+  }, [pathname])
 
   const toggle = () => {
-    if (!ctx.current || !master.current) return
-    const now = ctx.current.currentTime
+    const audio = audioRef.current
+    if (!audio) return
+
+    if (fadeTimerRef.current) clearInterval(fadeTimerRef.current)
+
     if (playing) {
-      master.current.gain.linearRampToValueAtTime(0, now + 1.5)
+      fadeTimerRef.current = fadeVolume(audio, audio.volume, 0, FADE_DURATION, () => audio.pause())
       setPlaying(false)
     } else {
-      master.current.gain.linearRampToValueAtTime(0.14, now + 1.5)
-      setPlaying(true)
+      audio.play()
+        .then(() => {
+          fadeTimerRef.current = fadeVolume(audio, 0, volume, FADE_DURATION)
+          setPlaying(true)
+        })
+        .catch((err) => console.error('Playback failed:', err))
     }
   }
 
-  if (!ready) return null
+  const onVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseFloat(e.target.value)
+    setVolume(val)
+    if (audioRef.current && playing) {
+      audioRef.current.volume = val
+    }
+  }
+
+  const onMouseEnter = () => {
+    if (hideSliderTimer.current) clearTimeout(hideSliderTimer.current)
+    setShowSlider(true)
+  }
+
+  const onMouseLeave = () => {
+    hideSliderTimer.current = setTimeout(() => setShowSlider(false), 600)
+  }
+
+  if (!visible) return null
 
   return (
-    <button id="sound-btn" onClick={toggle} aria-label="Toggle ambient sound"
-      style={{ borderColor: playing ? 'rgba(201,166,107,0.5)' : 'rgba(200,16,46,0.4)' }}
+    <div
+      style={{ position: 'fixed', bottom: '2rem', right: '2rem', zIndex: 500, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
     >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={playing ? '#C9A66B' : '#555'} strokeWidth="1.5" strokeLinecap="round">
-        {playing ? (
-          <>
-            <path d="M9 18V5l12-2v13"/>
-            <circle cx="6" cy="18" r="3"/>
-            <circle cx="18" cy="16" r="3"/>
-          </>
-        ) : (
-          <>
-            <path d="M9 18V5l12-2v13"/>
-            <circle cx="6" cy="18" r="3"/>
-            <circle cx="18" cy="16" r="3"/>
-            <line x1="3" y1="3" x2="21" y2="21" stroke="var(--red)"/>
-          </>
-        )}
-      </svg>
-    </button>
+      {/* Volume slider — appears on hover */}
+      <div style={{
+        display:        'flex',
+        flexDirection:  'column',
+        alignItems:     'center',
+        gap:            '0.4rem',
+        opacity:         showSlider ? 1 : 0,
+        transform:       showSlider ? 'translateY(0) scale(1)' : 'translateY(8px) scale(0.95)',
+        transition:     'opacity 0.3s ease, transform 0.3s ease',
+        pointerEvents:   showSlider ? 'auto' : 'none',
+      }}>
+        {/* Volume % label */}
+        <span style={{
+          fontFamily:     'Montserrat, sans-serif',
+          fontSize:       '0.45rem',
+          letterSpacing:  '0.2em',
+          color:          'var(--gold-dim)',
+          textTransform:  'uppercase',
+        }}>
+          {Math.round(volume * 100)}
+        </span>
+
+        {/* Vertical slider */}
+        <div style={{ position: 'relative', height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value={volume}
+            onChange={onVolumeChange}
+            aria-label="Volume"
+            style={{
+              writingMode:    'vertical-lr' as any,
+              direction:      'rtl',
+              appearance:     'slider-vertical' as any,
+              WebkitAppearance: 'slider-vertical' as any,
+              width:          4,
+              height:         80,
+              cursor:         'none',
+              accentColor:    'var(--gold)',
+              background:     'transparent',
+            }}
+          />
+        </div>
+
+        {/* Divider */}
+        <div style={{ width: 0.5, height: 12, background: 'linear-gradient(to bottom, var(--gold-dim), transparent)' }} />
+      </div>
+
+      {/* Main button */}
+      <button
+        id="sound-btn"
+        onClick={toggle}
+        aria-label="Toggle ambient sound"
+        title={playing ? 'Pause music' : 'Play ambient music'}
+        style={{ borderColor: playing ? 'rgba(201,166,107,0.5)' : 'rgba(200,16,46,0.4)' }}
+      >
+        <svg
+          width="16" height="16" viewBox="0 0 24 24"
+          fill="none"
+          stroke={playing ? '#C9A66B' : '#555'}
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        >
+          {playing ? (
+            <>
+              <path d="M9 18V5l12-2v13"/>
+              <circle cx="6" cy="18" r="3"/>
+              <circle cx="18" cy="16" r="3"/>
+            </>
+          ) : (
+            <>
+              <path d="M9 18V5l12-2v13"/>
+              <circle cx="6" cy="18" r="3"/>
+              <circle cx="18" cy="16" r="3"/>
+              <line x1="3" y1="3" x2="21" y2="21" stroke="var(--red)"/>
+            </>
+          )}
+        </svg>
+      </button>
+    </div>
   )
 }
