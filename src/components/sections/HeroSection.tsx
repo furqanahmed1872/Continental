@@ -6,71 +6,23 @@ import { orgData } from '@/data'
 
 /* ─── Cinematic particle canvas ─────────────────── */
 function ParticleCanvas() {
-  const ref = useRef<HTMLCanvasElement>(null)
+  const ref = useRef<HTMLCanvasElement>(null);
 
+  // NEW — in HeroSection (or whichever component owns the first page), add:
   useEffect(() => {
-    const canvas = ref.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')!
+    document.body.classList.add("no-scroll");
+    const onScroll = () => {
+      if (window.scrollY > 10) document.body.classList.remove("no-scroll");
+      else document.body.classList.add("no-scroll");
+    };
+    window.addEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      document.body.classList.remove("no-scroll");
+    };
+  }, []);
 
-    const resize = () => {
-      canvas.width = window.innerWidth
-      canvas.height = window.innerHeight
-    }
-    resize()
-
-    type P = { x:number; y:number; vx:number; vy:number; alpha:number; size:number; hue:number }
-    const pts: P[] = Array.from({ length: 100 }, () => ({
-      x:     Math.random() * canvas.width,
-      y:     Math.random() * canvas.height,
-      vx:    (Math.random() - 0.5) * 0.25,
-      vy:    (Math.random() - 0.5) * 0.25,
-      alpha: Math.random() * 0.35 + 0.05,
-      size:  Math.random() * 1.2 + 0.3,
-      hue:   Math.random() > 0.6 ? 1 : 0, // 1=crimson, 0=gold
-    }))
-
-    let raf: number
-    const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-
-      pts.forEach(p => {
-        p.x += p.vx; p.y += p.vy
-        if (p.x < 0 || p.x > canvas.width)  p.vx *= -1
-        if (p.y < 0 || p.y > canvas.height) p.vy *= -1
-
-        const color = p.hue === 1
-          ? `rgba(192,57,43,${p.alpha})`
-          : `rgba(200,134,10,${p.alpha})`
-        ctx.beginPath()
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
-        ctx.fillStyle = color
-        ctx.fill()
-      })
-
-      // connections
-      for (let i = 0; i < pts.length; i++) {
-        for (let j = i + 1; j < pts.length; j++) {
-          const d = Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y)
-          if (d < 130) {
-            const a = 0.07 * (1 - d / 130)
-            ctx.beginPath()
-            ctx.moveTo(pts[i].x, pts[i].y)
-            ctx.lineTo(pts[j].x, pts[j].y)
-            ctx.strokeStyle = `rgba(150,50,30,${a})`
-            ctx.lineWidth = 0.5
-            ctx.stroke()
-          }
-        }
-      }
-      raf = requestAnimationFrame(draw)
-    }
-    draw()
-    window.addEventListener('resize', resize)
-    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize) }
-  }, [])
-
-  return <canvas ref={ref} className="absolute inset-0 z-0" />
+  return <canvas ref={ref} className="absolute inset-0 z-0" />;
 }
 
 /* ─── Staggered text reveal ─────────────────────── */

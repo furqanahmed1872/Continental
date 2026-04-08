@@ -174,26 +174,6 @@ body::after {
   transform: scale(1.08);
 }
 
-/* Volume slider */
-input[type='range'][style*='slider-vertical'] {
-  padding: 0;
-}
-
-input[type='range']::-webkit-slider-thumb {
-  width: 8px;
-  height: 8px;
-  background: var(--gold);
-  border-radius: 50%;
-  border: none;
-  cursor: none;
-}
-
-input[type='range']::-webkit-slider-runnable-track {
-  background: rgba(201, 166, 107, 0.15);
-  width: 2px;
-  border-radius: 2px;
-}
-
 /* ═══════════════════════════════
    TYPOGRAPHY UTILITIES
 ═══════════════════════════════ */
@@ -375,6 +355,16 @@ input[type='range']::-webkit-slider-runnable-track {
 ::-webkit-scrollbar-track { background:var(--black); }
 ::-webkit-scrollbar-thumb { background:var(--gold-dim); border-radius:2px; }
 ::-webkit-scrollbar-thumb:hover { background:var(--gold); }
+/* OLD — nothing handles per-page overflow */
+
+/* NEW — add after the existing ::-webkit-scrollbar rules */
+body.no-scroll {
+  overflow: hidden;
+}
+
+body.no-scroll::-webkit-scrollbar {
+  display: none;
+}
 
 /* ═══════════════════════════════
    LENIS SMOOTH SCROLL

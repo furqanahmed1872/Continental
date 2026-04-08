@@ -10,6 +10,11 @@ export interface Product {
   fullDesc: string;
   tags: string[];
   accentColor?: string;
+  startDate?: string;
+  endDate?: string;
+  features?: string[];
+  images?: string[]; // Unsplash or placeholder URLs
+  liveUrl?: string;
 }
 
 export const products: Product[] = [
@@ -25,6 +30,19 @@ export const products: Product[] = [
     fullDesc:
       "Full diagnostic engine, Whisper transcription pipeline, OpenAI-generated study packs, Supabase RLS migrations, end-to-end bug resolution. Next.js 15, Express, Supabase, OpenAI.",
     tags: ["Next.js", "OpenAI", "Supabase", "Express", "AI"],
+    startDate: "Jan 2026",
+    endDate: "Ongoing",
+    features: [
+      "Whisper transcription pipeline",
+      "OpenAI study pack generation",
+      "Adaptive diagnostics",
+      "Supabase RLS with multi-tenant auth",
+      "Real-time progress tracking",
+    ],
+    images: [
+      "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=800&q=80",
+      "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80",
+    ],
   },
   {
     id: "airhandler",
@@ -38,6 +56,18 @@ export const products: Product[] = [
     fullDesc:
       "Full-stack HVAC CRM with a custom neobrutalism design system. Multi-role authentication, estimate workflows, admin panels, custom Tailwind. Next.js + TypeScript + Supabase.",
     tags: ["Next.js", "TypeScript", "Supabase", "CRM"],
+    startDate: "Oct 2025",
+    endDate: "Nov 2025",
+    features: [
+      "Multi-role auth (admin/tech/client)",
+      "Estimate & invoice workflows",
+      "Neobrutalism design system",
+      "Custom Tailwind config",
+      "Supabase real-time updates",
+    ],
+    images: [
+      "https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=800&q=80",
+    ],
   },
   {
     id: "graphy",
